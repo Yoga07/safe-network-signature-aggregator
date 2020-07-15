@@ -2,7 +2,9 @@
 name = "safe-network-signature-aggregator"
 description = "A generic BLS Signature Aggregator"
 homepage = "https://maidsafe.net"
-license = "GPL-3.0"
+license = "MIT OR BSD-3-Clause"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe-network-signature-aggregator"
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 version = "0.1.0"
 edition = "2018"
@@ -12,11 +14,11 @@ edition = "2018"
 [dependencies]
 bincode = "1.2.1"
 err-derive = "~0.2.4"
-fake_clock = "0.3.0"
+fake_clock = "~0.3.0"
 log = "~0.4.8"
 rand = "~0.6.5"
 serde = { version = "1.0.111", features = ["derive" ,"rc"] }
-threshold_crypto = "0.3.2"
+threshold_crypto = "~0.3.2"
 tiny-keccak = { version = "2.0.2", features = ["sha3"] }
 
 [features]
