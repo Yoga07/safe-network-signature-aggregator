@@ -46,7 +46,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bls-signature-aggregator"
+name = "bls_signature_aggregator"
 version = "0.1.0"
 dependencies = [
  "bincode",
