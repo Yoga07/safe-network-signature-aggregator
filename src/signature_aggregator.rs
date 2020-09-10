@@ -9,10 +9,9 @@
 
 use super::proof::{Proof, ProofShare};
 use err_derive::Error;
-use log::error;
 use serde::Serialize;
 use std::time::Duration;
-use std::{collections::HashMap, fmt::Debug, mem};
+use std::{collections::HashMap, fmt::Debug};
 use threshold_crypto as bls;
 
 #[cfg(feature = "mock_timer")]
@@ -61,15 +60,12 @@ pub const DEFAULT_EXPIRATION: Duration = Duration::from_secs(120);
 /// separately. This avoids mixing signature shares created from different curves which would
 /// otherwise lead to invalid signature to be produced even though all the shares are valid.
 ///
-pub struct SignatureAggregator<T> {
-    map: HashMap<(Digest256, bls::PublicKey), State<T>>,
+pub struct SignatureAggregator {
+    map: HashMap<(Digest256, bls::PublicKey), State>,
     expiration: Duration,
 }
 
-impl<T> SignatureAggregator<T>
-where
-    T: Debug + Serialize,
-{
+impl SignatureAggregator {
     /// Create new accumulator with default expiration.
     pub fn new() -> Self {
         Self::with_expiration(DEFAULT_EXPIRATION)
@@ -98,11 +94,14 @@ where
     /// Note: the `signature_share` field in the `proof_share` must be created by serializing the
     /// `payload` with `bincode::serialize` and signing the resulting bytes. Other serialization
     /// formats are not currently supported.
-    pub fn add(
+    pub fn add<T>(
         &mut self,
         payload: T,
         proof_share: ProofShare,
-    ) -> Result<(T, Proof), AccumulationError> {
+    ) -> Result<(T, Proof), AccumulationError>
+    where
+        T: Serialize,
+    {
         self.remove_expired();
 
         let mut bytes = bincode::serialize(&payload)?;
@@ -121,8 +120,8 @@ where
 
         self.map
             .entry(key)
-            .or_insert_with(|| State::new(payload))
-            .add(proof_share)
+            .or_insert_with(State::new)
+            .add(payload, proof_share)
             .map(|(payload, signature)| {
                 (
                     payload,
@@ -136,24 +135,12 @@ where
 
     fn remove_expired(&mut self) {
         let expiration = self.expiration;
-        self.map.retain(|_, state| {
-            if state.modified().elapsed() < expiration {
-                true
-            } else {
-                if let State::Accumulating { payload, .. } = state {
-                    error!("Expired signature accumulation of {:?}", payload)
-                }
-
-                false
-            }
-        })
+        self.map
+            .retain(|_, state| state.modified.elapsed() < expiration)
     }
 }
 
-impl<T> Default for SignatureAggregator<T>
-where
-    T: Debug + Serialize,
-{
+impl Default for SignatureAggregator {
     fn default() -> Self {
         Self::new()
     }
@@ -165,10 +152,6 @@ pub enum AccumulationError {
     /// There are not enough signature shares yet, more need to be added. This is not a failure.
     #[error(display = "not enough signature shares")]
     NotEnoughShares,
-    /// Enough signature share were already collected before and adding more has no effect. This is
-    /// not a failure.
-    #[error(display = "signature already accumulated")]
-    AlreadyAccumulated,
     /// The signature share being added is invalid. Such share is rejected but the already collected
     /// shares are kept intact. If enough new valid shares are collected afterwards, the
     /// accumulation might still succeed.
@@ -186,65 +169,44 @@ pub enum AccumulationError {
     Combine(#[error(from)] bls::error::Error),
 }
 
-enum State<T> {
-    Accumulating {
-        payload: T,
-        shares: HashMap<usize, bls::SignatureShare>,
-        modified: Instant,
-    },
-    Accumulated {
-        modified: Instant,
-    },
+struct State {
+    shares: HashMap<usize, bls::SignatureShare>,
+    modified: Instant,
 }
 
-impl<T> State<T> {
-    fn new(payload: T) -> Self {
-        Self::Accumulating {
-            payload,
+impl State {
+    fn new() -> Self {
+        Self {
             shares: Default::default(),
             modified: Instant::now(),
         }
     }
 
-    fn add(&mut self, proof_share: ProofShare) -> Result<(T, bls::Signature), AccumulationError> {
-        match self {
-            Self::Accumulating {
-                shares, modified, ..
-            } => {
-                if shares
-                    .insert(proof_share.index, proof_share.signature_share)
-                    .is_none()
-                {
-                    *modified = Instant::now();
-                } else {
-                    // Duplicate share
-                    return Err(AccumulationError::NotEnoughShares);
-                }
-
-                if shares.len() > proof_share.public_key_set.threshold() {
-                    let signature = proof_share
-                        .public_key_set
-                        .combine_signatures(shares.iter().map(|(&index, share)| (index, share)))?;
-
-                    let modified = *modified;
-                    let state = mem::replace(self, State::Accumulated { modified });
-
-                    if let State::Accumulating { payload, .. } = state {
-                        Ok((payload, signature))
-                    } else {
-                        unreachable!()
-                    }
-                } else {
-                    Err(AccumulationError::NotEnoughShares)
-                }
-            }
-            Self::Accumulated { .. } => Err(AccumulationError::AlreadyAccumulated),
+    fn add<T>(
+        &mut self,
+        payload: T,
+        proof_share: ProofShare,
+    ) -> Result<(T, bls::Signature), AccumulationError> {
+        if self
+            .shares
+            .insert(proof_share.index, proof_share.signature_share)
+            .is_none()
+        {
+            self.modified = Instant::now();
+        } else {
+            // Duplicate share
+            return Err(AccumulationError::NotEnoughShares);
         }
-    }
 
-    fn modified(&self) -> Instant {
-        match self {
-            Self::Accumulating { modified, .. } | Self::Accumulated { modified } => *modified,
+        if self.shares.len() > proof_share.public_key_set.threshold() {
+            let signature = proof_share
+                .public_key_set
+                .combine_signatures(self.shares.iter().map(|(&index, share)| (index, share)))?;
+            self.shares.clear();
+
+            Ok((payload, signature))
+        } else {
+            Err(AccumulationError::NotEnoughShares)
         }
     }
 }
@@ -283,12 +245,12 @@ mod tests {
         assert_eq!(accumulated_payload, payload);
         assert!(proof.verify(&bincode::serialize(&accumulated_payload).unwrap()));
 
-        // Extra shares are ignored
+        // Extra shares start another round
         let proof_share = create_proof_share(&sk_set, threshold + 1, &payload);
         let result = accumulator.add(payload, proof_share);
 
         match result {
-            Err(AccumulationError::AlreadyAccumulated) => (),
+            Err(AccumulationError::NotEnoughShares) => (),
             _ => panic!("unexpected result: {:?}", result),
         }
     }
@@ -348,6 +310,39 @@ mod tests {
             Err(AccumulationError::NotEnoughShares) => (),
             _ => panic!("unexpected result: {:?}", result),
         }
+    }
+
+    #[test]
+    fn repeated_voting() {
+        let mut rng = thread_rng();
+        let threshold = 3;
+        let sk_set = bls::SecretKeySet::random(threshold, &mut rng);
+
+        let mut accumulator = SignatureAggregator::new();
+
+        let payload = "hello".to_string();
+
+        // round 1
+
+        for index in 0..threshold {
+            let proof_share = create_proof_share(&sk_set, index, &payload);
+            assert!(accumulator.add(payload.clone(), proof_share).is_err());
+        }
+
+        let proof_share = create_proof_share(&sk_set, threshold, &payload);
+        assert!(accumulator.add(payload.clone(), proof_share).is_ok());
+
+        // round 2
+
+        let offset = 2;
+
+        for index in offset..(threshold + offset) {
+            let proof_share = create_proof_share(&sk_set, index, &payload);
+            assert!(accumulator.add(payload.clone(), proof_share).is_err());
+        }
+
+        let proof_share = create_proof_share(&sk_set, threshold + offset + 1, &payload);
+        assert!(accumulator.add(payload.clone(), proof_share).is_ok());
     }
 
     fn create_proof_share<T: Serialize>(

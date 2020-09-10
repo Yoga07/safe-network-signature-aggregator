@@ -51,7 +51,6 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "err-derive",
- "log",
  "rand",
  "serde",
  "sn_fake_clock",
