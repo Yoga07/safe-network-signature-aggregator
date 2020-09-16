@@ -340,7 +340,7 @@ mod tests {
         }
 
         let proof_share = create_proof_share(&sk_set, threshold + offset + 1, &payload);
-        assert!(accumulator.add(payload.clone(), proof_share).is_ok());
+        assert!(accumulator.add(payload, proof_share).is_ok());
     }
 
     fn create_proof_share<T: Serialize>(
