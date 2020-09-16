@@ -61,7 +61,7 @@ pub const DEFAULT_EXPIRATION: Duration = Duration::from_secs(120);
 /// otherwise lead to invalid signature to be produced even though all the shares are valid.
 ///
 pub struct SignatureAggregator {
-    map: HashMap<(Digest256, bls::PublicKey), State>,
+    map: HashMap<Digest256, State>,
     expiration: Duration,
 }
 
@@ -115,11 +115,9 @@ impl SignatureAggregator {
         let public_key = proof_share.public_key_set.public_key();
         bytes.extend_from_slice(&public_key.to_bytes());
         let hash = sha3_256(&bytes);
-        let public_key = proof_share.public_key_set.public_key();
-        let key = (hash, public_key);
 
         self.map
-            .entry(key)
+            .entry(hash)
             .or_insert_with(State::new)
             .add(payload, proof_share)
             .map(|(payload, signature)| {
