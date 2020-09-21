@@ -5,11 +5,9 @@ homepage = "https://maidsafe.net"
 license = "MIT OR BSD-3-Clause"
 readme = "README.md"
 repository = "https://github.com/maidsafe/bls_signature_aggregator"
-authors = ["MaidSafe Developers <dev@maidsafe.net>"]
-version = "0.1.0"
+authors = [ "MaidSafe Developers <dev@maidsafe.net>" ]
+version = "0.1.1"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 bincode = "1.2.1"
@@ -17,9 +15,15 @@ err-derive = "~0.2.4"
 sn_fake_clock = "~0.4.0"
 log = "~0.4.8"
 rand = "~0.7.3"
-serde = { version = "1.0.111", features = ["derive" ,"rc"] }
 threshold_crypto = "~0.4.0"
-tiny-keccak = { version = "2.0.2", features = ["sha3"] }
+
+  [dependencies.serde]
+  version = "1.0.111"
+  features = [ "derive", "rc" ]
+
+  [dependencies.tiny-keccak]
+  version = "2.0.2"
+  features = [ "sha3" ]
 
 [features]
-mock_timer = []
+mock_timer = [ ]
