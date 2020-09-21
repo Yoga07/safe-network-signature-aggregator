@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Proof","Proof that a quorum of the section elders has agreed on something."],["ProofShare","Single share of `Proof`."]]});
