@@ -13,16 +13,18 @@ edition = "2018"
 bincode = "1.2.1"
 err-derive = "~0.2.4"
 sn_fake_clock = { version = "~0.4.0", optional = true }
-rand = "~0.7.3"
 threshold_crypto = "~0.4.0"
 
   [dependencies.serde]
   version = "1.0.111"
-  features = [ "derive", "rc" ]
+  features = [ "derive" ]
 
   [dependencies.tiny-keccak]
   version = "2.0.2"
   features = [ "sha3" ]
+
+[dev-dependencies]
+rand = "~0.7.3"
 
 [features]
 mock_timer = ["sn_fake_clock"]
