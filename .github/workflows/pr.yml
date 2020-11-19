@@ -51,12 +51,43 @@ jobs:
       - name: Clippy checks
         run: cargo clippy --workspace --all-targets --all-features
 
+  lint:
+    name: Additional Linting Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # Install Rust
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      # Generate Cargo.lock, needed for the cache.
+      - name: Generate lockfile
+        run: cargo generate-lockfile
+
+      # Cache.
+      - name: Cargo cache registry, index and build
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-cache-${{ hashFiles('**/Cargo.lock') }}
+
+      # Run additional lint checks script
+      - shell: bash
+        run: ./scripts/lint.sh
+
   coverage:
     name: Code coverage check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      # Install Rust and required components
+      # Install Rust
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
