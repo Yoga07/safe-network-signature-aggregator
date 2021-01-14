@@ -88,7 +88,7 @@ impl SignatureAggregator {
     /// `AccumulationError::AlreadyAccumulated` means the signature was already accumulated and
     /// adding more shares has no effect. These two errors could be safely ignored (they might
     /// still be useful perhaps for debugging). The other error variants, however, indicate
-    /// failures and should be treated a such. See [AccumulationError](enum.AccumulationError.html)
+    /// failures and should be treated a such. See [AccumulationError]
     /// for more info.
     ///
     /// Note: the `signature_share` field in the `proof_share` must be created by serializing the
