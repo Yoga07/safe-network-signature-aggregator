@@ -36,24 +36,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "bincode"
-version = "1.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f30d3a39baa26f9651f17b375061f3233dde33424a8b72b0dbe93a68a0bc896d"
-dependencies = [
- "byteorder",
- "serde",
-]
-
-[[package]]
 name = "bls_signature_aggregator"
-version = "0.1.5"
+version = "0.1.7"
 dependencies = [
- "bincode",
  "err-derive",
  "rand",
  "serde",
- "sn_fake_clock",
  "threshold_crypto",
  "tiny-keccak",
 ]
@@ -377,12 +365,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "sn_fake_clock"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b3bb89541a5068ba2861181892745587897765ea2724b78257eb5f289de16ab"
 
 [[package]]
 name = "syn"
