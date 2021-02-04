@@ -299,68 +299,6 @@
 <span id="296">296</span>
 <span id="297">297</span>
 <span id="298">298</span>
-<span id="299">299</span>
-<span id="300">300</span>
-<span id="301">301</span>
-<span id="302">302</span>
-<span id="303">303</span>
-<span id="304">304</span>
-<span id="305">305</span>
-<span id="306">306</span>
-<span id="307">307</span>
-<span id="308">308</span>
-<span id="309">309</span>
-<span id="310">310</span>
-<span id="311">311</span>
-<span id="312">312</span>
-<span id="313">313</span>
-<span id="314">314</span>
-<span id="315">315</span>
-<span id="316">316</span>
-<span id="317">317</span>
-<span id="318">318</span>
-<span id="319">319</span>
-<span id="320">320</span>
-<span id="321">321</span>
-<span id="322">322</span>
-<span id="323">323</span>
-<span id="324">324</span>
-<span id="325">325</span>
-<span id="326">326</span>
-<span id="327">327</span>
-<span id="328">328</span>
-<span id="329">329</span>
-<span id="330">330</span>
-<span id="331">331</span>
-<span id="332">332</span>
-<span id="333">333</span>
-<span id="334">334</span>
-<span id="335">335</span>
-<span id="336">336</span>
-<span id="337">337</span>
-<span id="338">338</span>
-<span id="339">339</span>
-<span id="340">340</span>
-<span id="341">341</span>
-<span id="342">342</span>
-<span id="343">343</span>
-<span id="344">344</span>
-<span id="345">345</span>
-<span id="346">346</span>
-<span id="347">347</span>
-<span id="348">348</span>
-<span id="349">349</span>
-<span id="350">350</span>
-<span id="351">351</span>
-<span id="352">352</span>
-<span id="353">353</span>
-<span id="354">354</span>
-<span id="355">355</span>
-<span id="356">356</span>
-<span id="357">357</span>
-<span id="358">358</span>
-<span id="359">359</span>
-<span id="360">360</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">// Copyright 2020 MaidSafe.net limited.</span>
 <span class="comment">//</span>
@@ -372,55 +310,29 @@
 <span class="comment">// Software.</span>
 
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">proof</span>::{<span class="ident">Proof</span>, <span class="ident">ProofShare</span>};
-<span class="kw">use</span> <span class="ident">err_derive</span>::<span class="ident">Error</span>;
-<span class="kw">use</span> <span class="ident">serde</span>::<span class="ident">Serialize</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections</span>::<span class="ident">HashMap</span>, <span class="ident">fmt</span>::<span class="ident">Debug</span>};
+<span class="kw">use</span> <span class="ident">std</span>::{
+    <span class="ident">collections</span>::<span class="ident">HashMap</span>,
+    <span class="ident">fmt</span>::<span class="ident">Debug</span>,
+    <span class="ident">time</span>::{<span class="ident">Duration</span>, <span class="ident">Instant</span>},
+};
+<span class="kw">use</span> <span class="ident">thiserror</span>::<span class="ident">Error</span>;
 <span class="kw">use</span> <span class="ident">threshold_crypto</span> <span class="kw">as</span> <span class="ident">bls</span>;
+<span class="kw">use</span> <span class="ident">tiny_keccak</span>::{<span class="ident">Hasher</span>, <span class="ident">Sha3</span>};
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;mock_timer&quot;</span>)]</span>
-<span class="kw">use</span> <span class="ident">sn_fake_clock</span>::<span class="ident">FakeClock</span> <span class="kw">as</span> <span class="ident">Instant</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;mock_timer&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Instant</span>;
-
-<span class="doccomment">/// SHA3-256 hash digest.</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Digest256</span> <span class="op">=</span> [<span class="ident">u8</span>; <span class="number">32</span>];
-
-<span class="doccomment">/// SHA3-256 hash function.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sha3_256</span>(<span class="ident">input</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Digest256</span> {
-    <span class="kw">use</span> <span class="ident">tiny_keccak</span>::{<span class="ident">Hasher</span>, <span class="ident">Sha3</span>};
-
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hasher</span> <span class="op">=</span> <span class="ident">Sha3</span>::<span class="ident">v256</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">Digest256</span>::<span class="ident">default</span>();
-    <span class="ident">hasher</span>.<span class="ident">update</span>(<span class="ident">input</span>);
-    <span class="ident">hasher</span>.<span class="ident">finalize</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">output</span>);
-    <span class="ident">output</span>
-}
-
-<span class="doccomment">/// Default duration since their last modification after which all unaccumulated entries expire.</span>
+<span class="doccomment">/// Default duration since their last modification after which all unaggregated entries expire.</span>
 <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">DEFAULT_EXPIRATION</span>: <span class="ident">Duration</span> <span class="op">=</span> <span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">120</span>);
 
-<span class="doccomment">/// Accumulator for signature shares for arbitrary payloads.</span>
+<span class="kw">type</span> <span class="ident">Digest256</span> <span class="op">=</span> [<span class="ident">u8</span>; <span class="number">32</span>];
+
+<span class="doccomment">/// Aggregator for signature shares for arbitrary payloads.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// This accumulator allows to collect BLS signature shares for some payload one by one until enough</span>
+<span class="doccomment">/// This aggregator allows to collect BLS signature shares for some payload one by one until enough</span>
 <span class="doccomment">/// of them are collected. At that point it combines them into a full BLS signature of the given</span>
 <span class="doccomment">/// payload. It also automatically rejects invalid signature shares and expires entries that did not</span>
 <span class="doccomment">/// collect enough signature shares within a given time.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The accumulated payload needs to implement `Serialize` which is used in two ways:</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// 1. to calculate a cryptographic hash of the payload which is then used to compute the</span>
-<span class="doccomment">///    accumulation key.</span>
-<span class="doccomment">///    This means that two signature shares with payloads that serialize into the same byte sequence</span>
-<span class="doccomment">///    are accumulated together.</span>
-<span class="doccomment">/// 2. to verify the signature share - the serialized payload is what is passed to the `verify`</span>
-<span class="doccomment">///    function.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The serialization is performed using `bincode::serialize` which also needs to be used to</span>
-<span class="doccomment">/// create the signature share.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This accumulator also handles the case when the same payload is signed with a signature share</span>
-<span class="doccomment">/// corresponding to a different BLS public key. In that case, the payloads will be accumulated</span>
+<span class="doccomment">/// This aggregator also handles the case when the same payload is signed with a signature share</span>
+<span class="doccomment">/// corresponding to a different BLS public key. In that case, the payloads will be aggregated</span>
 <span class="doccomment">/// separately. This avoids mixing signature shares created from different curves which would</span>
 <span class="doccomment">/// otherwise lead to invalid signature to be produced even though all the shares are valid.</span>
 <span class="doccomment">///</span>
@@ -430,12 +342,12 @@
 }
 
 <span class="kw">impl</span> <span class="ident">SignatureAggregator</span> {
-    <span class="doccomment">/// Create new accumulator with default expiration.</span>
+    <span class="doccomment">/// Create new aggregator with default expiration.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span>::<span class="ident">with_expiration</span>(<span class="ident">DEFAULT_EXPIRATION</span>)
     }
 
-    <span class="doccomment">/// Create new accumulator with the given expiration.</span>
+    <span class="doccomment">/// Create new aggregator with the given expiration.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_expiration</span>(<span class="ident">expiration</span>: <span class="ident">Duration</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">map</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
@@ -443,55 +355,38 @@
         }
     }
 
-    <span class="doccomment">/// Add new share into the accumulator. If enough valid signature shares were collected, returns</span>
-    <span class="doccomment">/// the payload and its corresponding `Proof` (signature + public key). Otherwise returns error</span>
-    <span class="doccomment">/// which details why the accumulation did not succeed yet.</span>
+    <span class="doccomment">/// Add new share into the aggregator. If enough valid signature shares were collected, returns</span>
+    <span class="doccomment">/// its `Proof` (signature + public key). Otherwise returns error which details why the</span>
+    <span class="doccomment">/// aggregation did not succeed yet.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Note: returned `AccumulationError::NotEnoughShares` does not indicate a failure. It simply</span>
-    <span class="doccomment">/// means more shares still need to be added for that particular payload. Similarly,</span>
-    <span class="doccomment">/// `AccumulationError::AlreadyAccumulated` means the signature was already accumulated and</span>
-    <span class="doccomment">/// adding more shares has no effect. These two errors could be safely ignored (they might</span>
-    <span class="doccomment">/// still be useful perhaps for debugging). The other error variants, however, indicate</span>
-    <span class="doccomment">/// failures and should be treated a such. See [AccumulationError]</span>
-    <span class="doccomment">/// for more info.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Note: the `signature_share` field in the `proof_share` must be created by serializing the</span>
-    <span class="doccomment">/// `payload` with `bincode::serialize` and signing the resulting bytes. Other serialization</span>
-    <span class="doccomment">/// formats are not currently supported.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">payload</span>: <span class="ident">T</span>,
-        <span class="ident">proof_share</span>: <span class="ident">ProofShare</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">T</span>, <span class="ident">Proof</span>), <span class="ident">AccumulationError</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Serialize</span>,
-    {
+    <span class="doccomment">/// Note: returned `Error::NotEnoughShares` does not indicate a failure. It simply means more</span>
+    <span class="doccomment">/// shares still need to be added for that particular payload. This error could be safely</span>
+    <span class="doccomment">/// ignored (it might still be useful perhaps for debugging). The other error variants, however,</span>
+    <span class="doccomment">/// indicate failures and should be treated a such. See [Error] for more info.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">payload</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">proof_share</span>: <span class="ident">ProofShare</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">remove_expired</span>();
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">bincode</span>::<span class="ident">serialize</span>(<span class="kw-2">&amp;</span><span class="ident">payload</span>)<span class="question-mark">?</span>;
-
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">proof_share</span>.<span class="ident">verify</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>) {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AccumulationError</span>::<span class="ident">InvalidShare</span>);
+        <span class="kw">if</span> <span class="op">!</span><span class="ident">proof_share</span>.<span class="ident">verify</span>(<span class="ident">payload</span>) {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">InvalidShare</span>);
         }
 
         <span class="comment">// Use the hash of the payload + the public key as the key in the map to avoid mixing</span>
         <span class="comment">// entries that have the same payload but are signed using different keys.</span>
         <span class="kw">let</span> <span class="ident">public_key</span> <span class="op">=</span> <span class="ident">proof_share</span>.<span class="ident">public_key_set</span>.<span class="ident">public_key</span>();
-        <span class="ident">bytes</span>.<span class="ident">extend_from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">public_key</span>.<span class="ident">to_bytes</span>());
-        <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">sha3_256</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>);
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hasher</span> <span class="op">=</span> <span class="ident">Sha3</span>::<span class="ident">v256</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">Digest256</span>::<span class="ident">default</span>();
+        <span class="ident">hasher</span>.<span class="ident">update</span>(<span class="ident">payload</span>);
+        <span class="ident">hasher</span>.<span class="ident">update</span>(<span class="kw-2">&amp;</span><span class="ident">public_key</span>.<span class="ident">to_bytes</span>());
+        <span class="ident">hasher</span>.<span class="ident">finalize</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">hash</span>);
 
         <span class="self">self</span>.<span class="ident">map</span>
             .<span class="ident">entry</span>(<span class="ident">hash</span>)
             .<span class="ident">or_insert_with</span>(<span class="ident">State</span>::<span class="ident">new</span>)
-            .<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>)
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">payload</span>, <span class="ident">signature</span>)<span class="op">|</span> {
-                (
-                    <span class="ident">payload</span>,
-                    <span class="ident">Proof</span> {
-                        <span class="ident">public_key</span>,
-                        <span class="ident">signature</span>,
-                    },
-                )
+            .<span class="ident">add</span>(<span class="ident">proof_share</span>)
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">signature</span><span class="op">|</span> <span class="ident">Proof</span> {
+                <span class="ident">public_key</span>,
+                <span class="ident">signature</span>,
             })
     }
 
@@ -508,27 +403,22 @@
     }
 }
 
-<span class="doccomment">/// Error returned from SignatureAccumulator::add.</span>
+<span class="doccomment">/// Error returned from SignatureAggregator::add.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Error</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">AccumulationError</span> {
+<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Error</span> {
     <span class="doccomment">/// There are not enough signature shares yet, more need to be added. This is not a failure.</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">display</span> <span class="op">=</span> <span class="string">&quot;not enough signature shares&quot;</span>)]</span>
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;not enough signature shares&quot;</span>)]</span>
     <span class="ident">NotEnoughShares</span>,
     <span class="doccomment">/// The signature share being added is invalid. Such share is rejected but the already collected</span>
     <span class="doccomment">/// shares are kept intact. If enough new valid shares are collected afterwards, the</span>
-    <span class="doccomment">/// accumulation might still succeed.</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">display</span> <span class="op">=</span> <span class="string">&quot;signature share is invalid&quot;</span>)]</span>
+    <span class="doccomment">/// aggregation might still succeed.</span>
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;signature share is invalid&quot;</span>)]</span>
     <span class="ident">InvalidShare</span>,
-    <span class="doccomment">/// The payload failed to be serialised and can&#39;t be inserted into the accumulator. This doesn&#39;t</span>
-    <span class="doccomment">/// affect other entries already present and the accumulator can still be used normally</span>
-    <span class="doccomment">/// afterwards. In practice, this error should never happen unless the host machine runs out of</span>
-    <span class="doccomment">/// memory or a similar catastrophic failure.</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">display</span> <span class="op">=</span> <span class="string">&quot;failed to serialise payload: {}&quot;</span>, <span class="ident">_0</span>)]</span>
-    <span class="ident">Serialise</span>(<span class="attribute">#[<span class="ident">error</span>(<span class="ident">source</span>)]</span> <span class="ident">bincode</span>::<span class="ident">Error</span>),
     <span class="doccomment">/// The signature combination failed even though there are enough valid signature shares. This</span>
     <span class="doccomment">/// should probably never happen.</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="ident">display</span> <span class="op">=</span> <span class="string">&quot;failed to combine signature shares: {}&quot;</span>, <span class="ident">_0</span>)]</span>
-    <span class="ident">Combine</span>(<span class="attribute">#[<span class="ident">error</span>(<span class="ident">from</span>)]</span> <span class="ident">bls</span>::<span class="ident">error</span>::<span class="ident">Error</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;failed to combine signature shares: {0}&quot;</span>)]</span>
+    <span class="comment">// TODO: add &#39;#[from]` when `threshold_crytpo::Error` implements `std::error::Error`</span>
+    <span class="ident">Combine</span>(<span class="ident">bls</span>::<span class="ident">error</span>::<span class="ident">Error</span>),
 }
 
 <span class="kw">struct</span> <span class="ident">State</span> {
@@ -544,11 +434,7 @@
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">add</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">payload</span>: <span class="ident">T</span>,
-        <span class="ident">proof_share</span>: <span class="ident">ProofShare</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">T</span>, <span class="ident">bls</span>::<span class="ident">Signature</span>), <span class="ident">AccumulationError</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">add</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">proof_share</span>: <span class="ident">ProofShare</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bls</span>::<span class="ident">Signature</span>, <span class="ident">Error</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>
             .<span class="ident">shares</span>
             .<span class="ident">insert</span>(<span class="ident">proof_share</span>.<span class="ident">index</span>, <span class="ident">proof_share</span>.<span class="ident">signature_share</span>)
@@ -557,18 +443,19 @@
             <span class="self">self</span>.<span class="ident">modified</span> <span class="op">=</span> <span class="ident">Instant</span>::<span class="ident">now</span>();
         } <span class="kw">else</span> {
             <span class="comment">// Duplicate share</span>
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AccumulationError</span>::<span class="ident">NotEnoughShares</span>);
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">NotEnoughShares</span>);
         }
 
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">shares</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">proof_share</span>.<span class="ident">public_key_set</span>.<span class="ident">threshold</span>() {
             <span class="kw">let</span> <span class="ident">signature</span> <span class="op">=</span> <span class="ident">proof_share</span>
                 .<span class="ident">public_key_set</span>
-                .<span class="ident">combine_signatures</span>(<span class="self">self</span>.<span class="ident">shares</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span>(<span class="kw-2">&amp;</span><span class="ident">index</span>, <span class="ident">share</span>)<span class="op">|</span> (<span class="ident">index</span>, <span class="ident">share</span>)))<span class="question-mark">?</span>;
+                .<span class="ident">combine_signatures</span>(<span class="self">self</span>.<span class="ident">shares</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span>(<span class="kw-2">&amp;</span><span class="ident">index</span>, <span class="ident">share</span>)<span class="op">|</span> (<span class="ident">index</span>, <span class="ident">share</span>)))
+                .<span class="ident">map_err</span>(<span class="ident">Error</span>::<span class="ident">Combine</span>)<span class="question-mark">?</span>;
             <span class="self">self</span>.<span class="ident">shares</span>.<span class="ident">clear</span>();
 
-            <span class="prelude-val">Ok</span>((<span class="ident">payload</span>, <span class="ident">signature</span>))
+            <span class="prelude-val">Ok</span>(<span class="ident">signature</span>)
         } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">AccumulationError</span>::<span class="ident">NotEnoughShares</span>)
+            <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">NotEnoughShares</span>)
         }
     }
 }
@@ -585,34 +472,33 @@
         <span class="kw">let</span> <span class="ident">threshold</span> <span class="op">=</span> <span class="number">3</span>;
         <span class="kw">let</span> <span class="ident">sk_set</span> <span class="op">=</span> <span class="ident">bls</span>::<span class="ident">SecretKeySet</span>::<span class="ident">random</span>(<span class="ident">threshold</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">rng</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">accumulator</span> <span class="op">=</span> <span class="ident">SignatureAggregator</span>::<span class="ident">default</span>();
-        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="string">&quot;hello&quot;</span>.<span class="ident">to_string</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">aggregator</span> <span class="op">=</span> <span class="ident">SignatureAggregator</span>::<span class="ident">default</span>();
+        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="string">b&quot;hello&quot;</span>;
 
         <span class="comment">// Not enough shares yet</span>
         <span class="kw">for</span> <span class="ident">index</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">threshold</span> {
-            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
+            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="ident">payload</span>);
             <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">proof_share</span>);
-            <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>.<span class="ident">clone</span>(), <span class="ident">proof_share</span>);
+            <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>);
 
             <span class="kw">match</span> <span class="ident">result</span> {
-                <span class="prelude-val">Err</span>(<span class="ident">AccumulationError</span>::<span class="ident">NotEnoughShares</span>) <span class="op">=</span><span class="op">&gt;</span> (),
+                <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">NotEnoughShares</span>) <span class="op">=</span><span class="op">&gt;</span> (),
                 <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;unexpected result: {:?}&quot;</span>, <span class="ident">result</span>),
             }
         }
 
         <span class="comment">// Enough shares now</span>
-        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-        <span class="kw">let</span> (<span class="ident">accumulated_payload</span>, <span class="ident">proof</span>) <span class="op">=</span> <span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>.<span class="ident">clone</span>(), <span class="ident">proof_share</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span>, <span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="ident">proof</span> <span class="op">=</span> <span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>).<span class="ident">unwrap</span>();
 
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">accumulated_payload</span>, <span class="ident">payload</span>);
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">proof</span>.<span class="ident">verify</span>(<span class="kw-2">&amp;</span><span class="ident">bincode</span>::<span class="ident">serialize</span>(<span class="kw-2">&amp;</span><span class="ident">accumulated_payload</span>).<span class="ident">unwrap</span>()));
+        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">proof</span>.<span class="ident">verify</span>(<span class="ident">payload</span>));
 
         <span class="comment">// Extra shares start another round</span>
-        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span> <span class="op">+</span> <span class="number">1</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>);
+        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span> <span class="op">+</span> <span class="number">1</span>, <span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>);
 
         <span class="kw">match</span> <span class="ident">result</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">AccumulationError</span>::<span class="ident">NotEnoughShares</span>) <span class="op">=</span><span class="op">&gt;</span> (),
+            <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">NotEnoughShares</span>) <span class="op">=</span><span class="op">&gt;</span> (),
             <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;unexpected result: {:?}&quot;</span>, <span class="ident">result</span>),
         }
     }
@@ -623,29 +509,29 @@
         <span class="kw">let</span> <span class="ident">threshold</span> <span class="op">=</span> <span class="number">3</span>;
         <span class="kw">let</span> <span class="ident">sk_set</span> <span class="op">=</span> <span class="ident">bls</span>::<span class="ident">SecretKeySet</span>::<span class="ident">random</span>(<span class="ident">threshold</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">rng</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">accumulator</span> <span class="op">=</span> <span class="ident">SignatureAggregator</span>::<span class="ident">new</span>();
-        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="string">&quot;good&quot;</span>.<span class="ident">to_string</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">aggregator</span> <span class="op">=</span> <span class="ident">SignatureAggregator</span>::<span class="ident">new</span>();
+        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="string">b&quot;good&quot;</span>;
 
         <span class="comment">// First insert less than threshold + 1 valid shares.</span>
         <span class="kw">for</span> <span class="ident">index</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">threshold</span> {
-            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>.<span class="ident">clone</span>(), <span class="ident">proof_share</span>);
+            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="ident">payload</span>);
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>);
         }
 
         <span class="comment">// Then try to insert invalid share.</span>
-        <span class="kw">let</span> <span class="ident">invalid_proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span>, <span class="kw-2">&amp;</span><span class="string">&quot;bad&quot;</span>.<span class="ident">to_string</span>());
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>.<span class="ident">clone</span>(), <span class="ident">invalid_proof_share</span>);
+        <span class="kw">let</span> <span class="ident">invalid_proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span>, <span class="string">b&quot;bad&quot;</span>);
+        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">invalid_proof_share</span>);
 
         <span class="kw">match</span> <span class="ident">result</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">AccumulationError</span>::<span class="ident">InvalidShare</span>) <span class="op">=</span><span class="op">&gt;</span> (),
+            <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">InvalidShare</span>) <span class="op">=</span><span class="op">&gt;</span> (),
             <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;unexpected result: {:?}&quot;</span>, <span class="ident">result</span>),
         }
 
-        <span class="comment">// The invalid share doesn&#39;t spoil the accumulation - we can still accumulate once enough</span>
+        <span class="comment">// The invalid share doesn&#39;t spoil the aggregation - we can still aggregate once enough</span>
         <span class="comment">// valid shares are inserted.</span>
-        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span> <span class="op">+</span> <span class="number">1</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-        <span class="kw">let</span> (<span class="ident">accumulated_payload</span>, <span class="ident">proof</span>) <span class="op">=</span> <span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>).<span class="ident">unwrap</span>();
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">proof</span>.<span class="ident">verify</span>(<span class="kw-2">&amp;</span><span class="ident">bincode</span>::<span class="ident">serialize</span>(<span class="kw-2">&amp;</span><span class="ident">accumulated_payload</span>).<span class="ident">unwrap</span>()))
+        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span> <span class="op">+</span> <span class="number">1</span>, <span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="ident">proof</span> <span class="op">=</span> <span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>).<span class="ident">unwrap</span>();
+        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">proof</span>.<span class="ident">verify</span>(<span class="ident">payload</span>))
     }
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
@@ -654,22 +540,22 @@
         <span class="kw">let</span> <span class="ident">threshold</span> <span class="op">=</span> <span class="number">3</span>;
         <span class="kw">let</span> <span class="ident">sk_set</span> <span class="op">=</span> <span class="ident">bls</span>::<span class="ident">SecretKeySet</span>::<span class="ident">random</span>(<span class="ident">threshold</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">rng</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">accumulator</span> <span class="op">=</span> <span class="ident">SignatureAggregator</span>::<span class="ident">with_expiration</span>(<span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">3</span>));
-        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="string">&quot;hello&quot;</span>.<span class="ident">to_string</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">aggregator</span> <span class="op">=</span> <span class="ident">SignatureAggregator</span>::<span class="ident">with_expiration</span>(<span class="ident">Duration</span>::<span class="ident">from_millis</span>(<span class="number">500</span>));
+        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="string">b&quot;hello&quot;</span>;
 
         <span class="kw">for</span> <span class="ident">index</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">threshold</span> {
-            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>.<span class="ident">clone</span>(), <span class="ident">proof_share</span>);
+            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="ident">payload</span>);
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>);
         }
 
-        <span class="ident">sleep</span>(<span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">5</span>));
+        <span class="ident">sleep</span>(<span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">1</span>));
 
         <span class="comment">// Adding another share does nothing now, because the previous shares expired.</span>
-        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>);
+        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span>, <span class="ident">payload</span>);
+        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>);
 
         <span class="kw">match</span> <span class="ident">result</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">AccumulationError</span>::<span class="ident">NotEnoughShares</span>) <span class="op">=</span><span class="op">&gt;</span> (),
+            <span class="prelude-val">Err</span>(<span class="ident">Error</span>::<span class="ident">NotEnoughShares</span>) <span class="op">=</span><span class="op">&gt;</span> (),
             <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;unexpected result: {:?}&quot;</span>, <span class="ident">result</span>),
         }
     }
@@ -680,46 +566,36 @@
         <span class="kw">let</span> <span class="ident">threshold</span> <span class="op">=</span> <span class="number">3</span>;
         <span class="kw">let</span> <span class="ident">sk_set</span> <span class="op">=</span> <span class="ident">bls</span>::<span class="ident">SecretKeySet</span>::<span class="ident">random</span>(<span class="ident">threshold</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">rng</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">accumulator</span> <span class="op">=</span> <span class="ident">SignatureAggregator</span>::<span class="ident">new</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">aggregator</span> <span class="op">=</span> <span class="ident">SignatureAggregator</span>::<span class="ident">new</span>();
 
-        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="string">&quot;hello&quot;</span>.<span class="ident">to_string</span>();
+        <span class="kw">let</span> <span class="ident">payload</span> <span class="op">=</span> <span class="string">b&quot;hello&quot;</span>;
 
         <span class="comment">// round 1</span>
 
         <span class="kw">for</span> <span class="ident">index</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">threshold</span> {
-            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-            <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>.<span class="ident">clone</span>(), <span class="ident">proof_share</span>).<span class="ident">is_err</span>());
+            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="ident">payload</span>);
+            <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>).<span class="ident">is_err</span>());
         }
 
-        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>.<span class="ident">clone</span>(), <span class="ident">proof_share</span>).<span class="ident">is_ok</span>());
+        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span>, <span class="ident">payload</span>);
+        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>).<span class="ident">is_ok</span>());
 
         <span class="comment">// round 2</span>
 
         <span class="kw">let</span> <span class="ident">offset</span> <span class="op">=</span> <span class="number">2</span>;
 
         <span class="kw">for</span> <span class="ident">index</span> <span class="kw">in</span> <span class="ident">offset</span>..(<span class="ident">threshold</span> <span class="op">+</span> <span class="ident">offset</span>) {
-            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-            <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>.<span class="ident">clone</span>(), <span class="ident">proof_share</span>).<span class="ident">is_err</span>());
+            <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">index</span>, <span class="ident">payload</span>);
+            <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>).<span class="ident">is_err</span>());
         }
 
-        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span> <span class="op">+</span> <span class="ident">offset</span> <span class="op">+</span> <span class="number">1</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>);
-        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">accumulator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>).<span class="ident">is_ok</span>());
+        <span class="kw">let</span> <span class="ident">proof_share</span> <span class="op">=</span> <span class="ident">create_proof_share</span>(<span class="kw-2">&amp;</span><span class="ident">sk_set</span>, <span class="ident">threshold</span> <span class="op">+</span> <span class="ident">offset</span> <span class="op">+</span> <span class="number">1</span>, <span class="ident">payload</span>);
+        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">aggregator</span>.<span class="ident">add</span>(<span class="ident">payload</span>, <span class="ident">proof_share</span>).<span class="ident">is_ok</span>());
     }
 
-    <span class="kw">fn</span> <span class="ident">create_proof_share</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Serialize</span><span class="op">&gt;</span>(
-        <span class="ident">sk_set</span>: <span class="kw-2">&amp;</span><span class="ident">bls</span>::<span class="ident">SecretKeySet</span>,
-        <span class="ident">index</span>: <span class="ident">usize</span>,
-        <span class="ident">payload</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ProofShare</span> {
+    <span class="kw">fn</span> <span class="ident">create_proof_share</span>(<span class="ident">sk_set</span>: <span class="kw-2">&amp;</span><span class="ident">bls</span>::<span class="ident">SecretKeySet</span>, <span class="ident">index</span>: <span class="ident">usize</span>, <span class="ident">payload</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ProofShare</span> {
         <span class="kw">let</span> <span class="ident">sk_share</span> <span class="op">=</span> <span class="ident">sk_set</span>.<span class="ident">secret_key_share</span>(<span class="ident">index</span>);
-
-        <span class="ident">ProofShare</span>::<span class="ident">new</span>(
-            <span class="ident">sk_set</span>.<span class="ident">public_keys</span>(),
-            <span class="ident">index</span>,
-            <span class="kw-2">&amp;</span><span class="ident">sk_share</span>,
-            <span class="kw-2">&amp;</span><span class="ident">bincode</span>::<span class="ident">serialize</span>(<span class="kw-2">&amp;</span><span class="ident">payload</span>).<span class="ident">unwrap</span>(),
-        )
+        <span class="ident">ProofShare</span>::<span class="ident">new</span>(<span class="ident">sk_set</span>.<span class="ident">public_keys</span>(), <span class="ident">index</span>, <span class="kw-2">&amp;</span><span class="ident">sk_share</span>, <span class="kw-2">&amp;</span><span class="ident">payload</span>)
     }
 }
 </pre></div>

@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["bls_signature_aggregator"] = [{"text":"impl RefUnwindSafe for Proof","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for ProofShare","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for SignatureAggregator","synthetic":true,"types":[]},{"text":"impl !RefUnwindSafe for AccumulationError","synthetic":true,"types":[]}];
+implementors["bls_signature_aggregator"] = [{"text":"impl RefUnwindSafe for Proof","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for ProofShare","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for SignatureAggregator","synthetic":true,"types":[]},{"text":"impl RefUnwindSafe for Error","synthetic":true,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

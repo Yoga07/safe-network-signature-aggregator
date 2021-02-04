@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["bls_signature_aggregator"] = [{"text":"impl Send for Proof","synthetic":true,"types":[]},{"text":"impl Send for ProofShare","synthetic":true,"types":[]},{"text":"impl Send for SignatureAggregator","synthetic":true,"types":[]},{"text":"impl Send for AccumulationError","synthetic":true,"types":[]}];
+implementors["bls_signature_aggregator"] = [{"text":"impl Send for Proof","synthetic":true,"types":[]},{"text":"impl Send for ProofShare","synthetic":true,"types":[]},{"text":"impl Send for SignatureAggregator","synthetic":true,"types":[]},{"text":"impl Send for Error","synthetic":true,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

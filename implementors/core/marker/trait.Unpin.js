@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["bls_signature_aggregator"] = [{"text":"impl Unpin for Proof","synthetic":true,"types":[]},{"text":"impl Unpin for ProofShare","synthetic":true,"types":[]},{"text":"impl Unpin for SignatureAggregator","synthetic":true,"types":[]},{"text":"impl Unpin for AccumulationError","synthetic":true,"types":[]}];
+implementors["bls_signature_aggregator"] = [{"text":"impl Unpin for Proof","synthetic":true,"types":[]},{"text":"impl Unpin for ProofShare","synthetic":true,"types":[]},{"text":"impl Unpin for SignatureAggregator","synthetic":true,"types":[]},{"text":"impl Unpin for Error","synthetic":true,"types":[]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
