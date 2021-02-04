@@ -10,7 +10,7 @@ version = "0.1.7"
 edition = "2018"
 
 [dependencies]
-err-derive = "~0.2.4"
+thiserror = "1"
 threshold_crypto = "~0.4.0"
 
   [dependencies.serde]

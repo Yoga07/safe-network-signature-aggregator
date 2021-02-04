@@ -8,12 +8,12 @@
 // Software.
 
 use super::proof::{Proof, ProofShare};
-use err_derive::Error;
 use std::{
     collections::HashMap,
     fmt::Debug,
     time::{Duration, Instant},
 };
+use thiserror::Error;
 use threshold_crypto as bls;
 use tiny_keccak::{Hasher, Sha3};
 
@@ -112,17 +112,18 @@ impl Default for SignatureAggregator {
 #[derive(Debug, Error)]
 pub enum AccumulationError {
     /// There are not enough signature shares yet, more need to be added. This is not a failure.
-    #[error(display = "not enough signature shares")]
+    #[error("not enough signature shares")]
     NotEnoughShares,
     /// The signature share being added is invalid. Such share is rejected but the already collected
     /// shares are kept intact. If enough new valid shares are collected afterwards, the
     /// accumulation might still succeed.
-    #[error(display = "signature share is invalid")]
+    #[error("signature share is invalid")]
     InvalidShare,
     /// The signature combination failed even though there are enough valid signature shares. This
     /// should probably never happen.
-    #[error(display = "failed to combine signature shares: {}", _0)]
-    Combine(#[error(from)] bls::error::Error),
+    #[error("failed to combine signature shares: {0}")]
+    // TODO: add '#[from]` when `threshold_crytpo::Error` implements `std::error::Error`
+    Combine(bls::error::Error),
 }
 
 struct State {
@@ -153,7 +154,8 @@ impl State {
         if self.shares.len() > proof_share.public_key_set.threshold() {
             let signature = proof_share
                 .public_key_set
-                .combine_signatures(self.shares.iter().map(|(&index, share)| (index, share)))?;
+                .combine_signatures(self.shares.iter().map(|(&index, share)| (index, share)))
+                .map_err(AccumulationError::Combine)?;
             self.shares.clear();
 
             Ok(signature)
