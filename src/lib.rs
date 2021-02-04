@@ -11,4 +11,4 @@ pub mod proof;
 pub mod signature_aggregator;
 
 pub use proof::{Proof, ProofShare};
-pub use signature_aggregator::{AccumulationError, SignatureAggregator};
+pub use signature_aggregator::{Error, SignatureAggregator};

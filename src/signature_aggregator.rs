@@ -17,20 +17,20 @@ use thiserror::Error;
 use threshold_crypto as bls;
 use tiny_keccak::{Hasher, Sha3};
 
-/// Default duration since their last modification after which all unaccumulated entries expire.
+/// Default duration since their last modification after which all unaggregated entries expire.
 pub const DEFAULT_EXPIRATION: Duration = Duration::from_secs(120);
 
 type Digest256 = [u8; 32];
 
-/// Accumulator for signature shares for arbitrary payloads.
+/// Aggregator for signature shares for arbitrary payloads.
 ///
-/// This accumulator allows to collect BLS signature shares for some payload one by one until enough
+/// This aggregator allows to collect BLS signature shares for some payload one by one until enough
 /// of them are collected. At that point it combines them into a full BLS signature of the given
 /// payload. It also automatically rejects invalid signature shares and expires entries that did not
 /// collect enough signature shares within a given time.
 ///
-/// This accumulator also handles the case when the same payload is signed with a signature share
-/// corresponding to a different BLS public key. In that case, the payloads will be accumulated
+/// This aggregator also handles the case when the same payload is signed with a signature share
+/// corresponding to a different BLS public key. In that case, the payloads will be aggregated
 /// separately. This avoids mixing signature shares created from different curves which would
 /// otherwise lead to invalid signature to be produced even though all the shares are valid.
 ///
@@ -40,12 +40,12 @@ pub struct SignatureAggregator {
 }
 
 impl SignatureAggregator {
-    /// Create new accumulator with default expiration.
+    /// Create new aggregator with default expiration.
     pub fn new() -> Self {
         Self::with_expiration(DEFAULT_EXPIRATION)
     }
 
-    /// Create new accumulator with the given expiration.
+    /// Create new aggregator with the given expiration.
     pub fn with_expiration(expiration: Duration) -> Self {
         Self {
             map: Default::default(),
@@ -53,26 +53,19 @@ impl SignatureAggregator {
         }
     }
 
-    /// Add new share into the accumulator. If enough valid signature shares were collected, returns
+    /// Add new share into the aggregator. If enough valid signature shares were collected, returns
     /// its `Proof` (signature + public key). Otherwise returns error which details why the
-    /// accumulation did not succeed yet.
+    /// aggregation did not succeed yet.
     ///
-    /// Note: returned `AccumulationError::NotEnoughShares` does not indicate a failure. It simply
-    /// means more shares still need to be added for that particular payload. Similarly,
-    /// `AccumulationError::AlreadyAccumulated` means the signature was already accumulated and
-    /// adding more shares has no effect. These two errors could be safely ignored (they might
-    /// still be useful perhaps for debugging). The other error variants, however, indicate
-    /// failures and should be treated a such. See [AccumulationError]
-    /// for more info.
-    pub fn add(
-        &mut self,
-        payload: &[u8],
-        proof_share: ProofShare,
-    ) -> Result<Proof, AccumulationError> {
+    /// Note: returned `Error::NotEnoughShares` does not indicate a failure. It simply means more
+    /// shares still need to be added for that particular payload. This error could be safely
+    /// ignored (it might still be useful perhaps for debugging). The other error variants, however,
+    /// indicate failures and should be treated a such. See [Error] for more info.
+    pub fn add(&mut self, payload: &[u8], proof_share: ProofShare) -> Result<Proof, Error> {
         self.remove_expired();
 
         if !proof_share.verify(payload) {
-            return Err(AccumulationError::InvalidShare);
+            return Err(Error::InvalidShare);
         }
 
         // Use the hash of the payload + the public key as the key in the map to avoid mixing
@@ -108,15 +101,15 @@ impl Default for SignatureAggregator {
     }
 }
 
-/// Error returned from SignatureAccumulator::add.
+/// Error returned from SignatureAggregator::add.
 #[derive(Debug, Error)]
-pub enum AccumulationError {
+pub enum Error {
     /// There are not enough signature shares yet, more need to be added. This is not a failure.
     #[error("not enough signature shares")]
     NotEnoughShares,
     /// The signature share being added is invalid. Such share is rejected but the already collected
     /// shares are kept intact. If enough new valid shares are collected afterwards, the
-    /// accumulation might still succeed.
+    /// aggregation might still succeed.
     #[error("signature share is invalid")]
     InvalidShare,
     /// The signature combination failed even though there are enough valid signature shares. This
@@ -139,7 +132,7 @@ impl State {
         }
     }
 
-    fn add(&mut self, proof_share: ProofShare) -> Result<bls::Signature, AccumulationError> {
+    fn add(&mut self, proof_share: ProofShare) -> Result<bls::Signature, Error> {
         if self
             .shares
             .insert(proof_share.index, proof_share.signature_share)
@@ -148,19 +141,19 @@ impl State {
             self.modified = Instant::now();
         } else {
             // Duplicate share
-            return Err(AccumulationError::NotEnoughShares);
+            return Err(Error::NotEnoughShares);
         }
 
         if self.shares.len() > proof_share.public_key_set.threshold() {
             let signature = proof_share
                 .public_key_set
                 .combine_signatures(self.shares.iter().map(|(&index, share)| (index, share)))
-                .map_err(AccumulationError::Combine)?;
+                .map_err(Error::Combine)?;
             self.shares.clear();
 
             Ok(signature)
         } else {
-            Err(AccumulationError::NotEnoughShares)
+            Err(Error::NotEnoughShares)
         }
     }
 }
@@ -177,33 +170,33 @@ mod tests {
         let threshold = 3;
         let sk_set = bls::SecretKeySet::random(threshold, &mut rng);
 
-        let mut accumulator = SignatureAggregator::default();
+        let mut aggregator = SignatureAggregator::default();
         let payload = b"hello";
 
         // Not enough shares yet
         for index in 0..threshold {
             let proof_share = create_proof_share(&sk_set, index, payload);
             println!("{:?}", proof_share);
-            let result = accumulator.add(payload, proof_share);
+            let result = aggregator.add(payload, proof_share);
 
             match result {
-                Err(AccumulationError::NotEnoughShares) => (),
+                Err(Error::NotEnoughShares) => (),
                 _ => panic!("unexpected result: {:?}", result),
             }
         }
 
         // Enough shares now
         let proof_share = create_proof_share(&sk_set, threshold, payload);
-        let proof = accumulator.add(payload, proof_share).unwrap();
+        let proof = aggregator.add(payload, proof_share).unwrap();
 
         assert!(proof.verify(payload));
 
         // Extra shares start another round
         let proof_share = create_proof_share(&sk_set, threshold + 1, payload);
-        let result = accumulator.add(payload, proof_share);
+        let result = aggregator.add(payload, proof_share);
 
         match result {
-            Err(AccumulationError::NotEnoughShares) => (),
+            Err(Error::NotEnoughShares) => (),
             _ => panic!("unexpected result: {:?}", result),
         }
     }
@@ -214,28 +207,28 @@ mod tests {
         let threshold = 3;
         let sk_set = bls::SecretKeySet::random(threshold, &mut rng);
 
-        let mut accumulator = SignatureAggregator::new();
+        let mut aggregator = SignatureAggregator::new();
         let payload = b"good";
 
         // First insert less than threshold + 1 valid shares.
         for index in 0..threshold {
             let proof_share = create_proof_share(&sk_set, index, payload);
-            let _ = accumulator.add(payload, proof_share);
+            let _ = aggregator.add(payload, proof_share);
         }
 
         // Then try to insert invalid share.
         let invalid_proof_share = create_proof_share(&sk_set, threshold, b"bad");
-        let result = accumulator.add(payload, invalid_proof_share);
+        let result = aggregator.add(payload, invalid_proof_share);
 
         match result {
-            Err(AccumulationError::InvalidShare) => (),
+            Err(Error::InvalidShare) => (),
             _ => panic!("unexpected result: {:?}", result),
         }
 
-        // The invalid share doesn't spoil the accumulation - we can still accumulate once enough
+        // The invalid share doesn't spoil the aggregation - we can still aggregate once enough
         // valid shares are inserted.
         let proof_share = create_proof_share(&sk_set, threshold + 1, payload);
-        let proof = accumulator.add(payload, proof_share).unwrap();
+        let proof = aggregator.add(payload, proof_share).unwrap();
         assert!(proof.verify(payload))
     }
 
@@ -245,22 +238,22 @@ mod tests {
         let threshold = 3;
         let sk_set = bls::SecretKeySet::random(threshold, &mut rng);
 
-        let mut accumulator = SignatureAggregator::with_expiration(Duration::from_millis(500));
+        let mut aggregator = SignatureAggregator::with_expiration(Duration::from_millis(500));
         let payload = b"hello";
 
         for index in 0..threshold {
             let proof_share = create_proof_share(&sk_set, index, payload);
-            let _ = accumulator.add(payload, proof_share);
+            let _ = aggregator.add(payload, proof_share);
         }
 
         sleep(Duration::from_secs(1));
 
         // Adding another share does nothing now, because the previous shares expired.
         let proof_share = create_proof_share(&sk_set, threshold, payload);
-        let result = accumulator.add(payload, proof_share);
+        let result = aggregator.add(payload, proof_share);
 
         match result {
-            Err(AccumulationError::NotEnoughShares) => (),
+            Err(Error::NotEnoughShares) => (),
             _ => panic!("unexpected result: {:?}", result),
         }
     }
@@ -271,7 +264,7 @@ mod tests {
         let threshold = 3;
         let sk_set = bls::SecretKeySet::random(threshold, &mut rng);
 
-        let mut accumulator = SignatureAggregator::new();
+        let mut aggregator = SignatureAggregator::new();
 
         let payload = b"hello";
 
@@ -279,11 +272,11 @@ mod tests {
 
         for index in 0..threshold {
             let proof_share = create_proof_share(&sk_set, index, payload);
-            assert!(accumulator.add(payload, proof_share).is_err());
+            assert!(aggregator.add(payload, proof_share).is_err());
         }
 
         let proof_share = create_proof_share(&sk_set, threshold, payload);
-        assert!(accumulator.add(payload, proof_share).is_ok());
+        assert!(aggregator.add(payload, proof_share).is_ok());
 
         // round 2
 
@@ -291,11 +284,11 @@ mod tests {
 
         for index in offset..(threshold + offset) {
             let proof_share = create_proof_share(&sk_set, index, payload);
-            assert!(accumulator.add(payload, proof_share).is_err());
+            assert!(aggregator.add(payload, proof_share).is_err());
         }
 
         let proof_share = create_proof_share(&sk_set, threshold + offset + 1, payload);
-        assert!(accumulator.add(payload, proof_share).is_ok());
+        assert!(aggregator.add(payload, proof_share).is_ok());
     }
 
     fn create_proof_share(sk_set: &bls::SecretKeySet, index: usize, payload: &[u8]) -> ProofShare {
