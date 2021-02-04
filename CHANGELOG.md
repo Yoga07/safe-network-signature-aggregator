@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0](https://github.com/maidsafe/bls_signature_aggregator/compare/v0.1.7...v0.2.0) (2021-02-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename AccumulationError to Error
+* make the crate serialization format agnostic + remove fake clock
+
+### Features
+
+* make the crate serialization format agnostic + remove fake clock ([0c0b7ab](https://github.com/maidsafe/bls_signature_aggregator/commit/0c0b7ab96bfae28381109ce8ba83a13483db54ee))
+
+
+* rename AccumulationError to Error ([1530822](https://github.com/maidsafe/bls_signature_aggregator/commit/1530822e4410849e93ce1b9d3e4f81d56f6d2551))
+
 ### [0.1.7](https://github.com/maidsafe/bls_signature_aggregator/compare/v0.1.6...v0.1.7) (2021-02-03)
 
 ### [0.1.6](https://github.com/maidsafe/bls_signature_aggregator/compare/v0.1.5...v0.1.6) (2021-01-14)
