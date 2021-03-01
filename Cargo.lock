@@ -37,7 +37,7 @@ dependencies = [
 
 [[package]]
 name = "bls_signature_aggregator"
-version = "0.1.7"
+version = "0.2.3"
 dependencies = [
  "rand",
  "serde",
