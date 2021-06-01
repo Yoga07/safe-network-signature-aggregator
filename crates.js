@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["bls_signature_aggregator"];
