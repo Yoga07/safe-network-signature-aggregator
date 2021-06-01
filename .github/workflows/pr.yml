@@ -16,6 +16,7 @@ env:
 
 jobs:
   checks:
+    if: "!startsWith(github.event.pull_request.title, 'Automated version bump')"
     name: Clippy & fmt
     runs-on: ubuntu-latest
     steps:
@@ -48,6 +49,7 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features
 
   check_pr_size:
+    if: "!startsWith(github.event.pull_request.title, 'Automated version bump')"
     name: Check PR size doesn't break set limit
     runs-on: ubuntu-latest
     steps:
@@ -59,7 +61,9 @@ jobs:
           max_lines_changed: 200
   
   geiger:
-    if: ${{ github.repository_owner == 'maidsafe' }}
+    if: |
+      github.repository_owner == 'maidsafe' &&
+      !startsWith(github.event.pull_request.title, 'Automated version bump')
     name: Cargo geiger
     runs-on: ubuntu-latest
     steps:
@@ -89,6 +93,7 @@ jobs:
         run: cargo geiger --all-features --all-targets --all-dependencies
   
   coverage:
+    if: "!startsWith(github.event.pull_request.title, 'Automated version bump')"
     name: Code coverage check
     runs-on: ubuntu-latest
     steps:
@@ -128,6 +133,7 @@ jobs:
           parallel-finished: true
 
   cargo-udeps:
+    if: "!startsWith(github.event.pull_request.title, 'Automated version bump')"
     name: Unused dependency check
     runs-on: ubuntu-latest
     steps:
@@ -146,6 +152,7 @@ jobs:
           cargo +nightly udeps --all-targets
 
   cargo-deny:
+    if: "!startsWith(github.event.pull_request.title, 'Automated version bump')"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -157,6 +164,7 @@ jobs:
     - uses: EmbarkStudios/cargo-deny-action@v1
 
   test:
+    if: "!startsWith(github.event.pull_request.title, 'Automated version bump')"
     name: Test
     runs-on: ${{ matrix.os }}
     strategy:
@@ -188,6 +196,7 @@ jobs:
 
   # Test publish using --dry-run.
   test-publish:
+    if: "!startsWith(github.event.pull_request.title, 'Automated version bump')"
     name: Test Publish
     runs-on: ubuntu-latest
     steps:
